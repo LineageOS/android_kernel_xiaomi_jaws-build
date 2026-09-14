@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: GPL-2.0
+
+load("//build/kernel/kleaf:kernel.bzl", "kernel_build_config")
+load("//vendor/amlogic/kernel:kernel_platform.bzl", "amlogic_kernel_platform")
+load("//vendor/amlogic/gpu-modules/bifrost:defs.bzl", "mali_bifrost_module")
+load("//vendor/amlogic/media-modules:defs.bzl", "media_modules_module")
+load(":modules.bzl", "COMMON_DRIVERS_MODULES", "GKI_MODULES_REMOVE", "TARGET_MODULES", "MODULES_OUT_REMOVE", "SYSTEM_DLKM_MODULES")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+mali_bifrost_module(name = "gpu_bifrost", kernel_build = ":jaws")
+
+media_modules_module(name = "media", kernel_build = ":jaws")
+
+amlogic_kernel_platform(
+    name = "jaws",
+    dtb_outs = [
+        "sc2_s905x4_jaws.dtb",
+        "android_overlay_dt.dtbo",
+    ],
+    module_outs = [m for m in TARGET_MODULES + COMMON_DRIVERS_MODULES + SYSTEM_DLKM_MODULES if m not in MODULES_OUT_REMOVE],
+    gki_modules_remove = GKI_MODULES_REMOVE + SYSTEM_DLKM_MODULES,
+    system_dlkm_modules_load = ["kernel/" + m for m in SYSTEM_DLKM_MODULES] + [""],
+    build_config = ":jaws_build_config",
+    kmi_symbol_list = "//vendor/amlogic/kernel:android/abi_gki_aarch64_amlogic",
+    kernel_modules = [
+        ":gpu_bifrost",
+        ":media",
+    ],
+)
+
+kernel_build_config(
+    name = "jaws_build_config",
+    srcs = [
+        # do not sort
+        "//vendor/amlogic/kernel:set_kernel_dir_build_config",
+        "//vendor/amlogic/kernel:build.config.gki.aarch64",
+        "build.config.jaws",
+    ],
+)
